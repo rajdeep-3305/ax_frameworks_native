@@ -35,15 +35,15 @@ namespace skia {
  * KawaseDarkmoon - a lightweight dual-filter Kawase blur aimed at low-end GPUs.
  *
  * Compared to KawaseBlurDualFilterV2 it:
- *  - uses cheaper kernels (4 taps per down-sample pass, 5 taps per up-sample pass instead of
- *    5 and 8 taps respectively), and
- *  - keeps its intermediate render targets alive across frames (grow-only, sized to the
- *    display) instead of allocating them every call, so steady-state blurring does no
- *    allocation and no surface creation.
+ *  - uses 4 taps instead of 5 in subsequent down-sample passes and 5 instead of 8 in
+ *    up-sample passes (the initial down-sample uses the same 4 taps), and
+ *  - reuses unprotected SkSurfaces across frames, growing to fit the display and blur region
+ *    while the GPU context and image format stay compatible. This is independent of V2's
+ *    optional hardware-buffer preallocation.
  *
  * Intermediate surfaces may be larger than the region being blurred. All reads are
- * coordinate-clamped to the valid content and every pass writes a 1px edge-extended margin, so
- * stale pixels from earlier (larger) blurs never leak into the result.
+ * coordinate-clamped to the valid content, including the final composition shader, so stale
+ * pixels from earlier (larger) blurs never leak into the result.
  *
  * Protected (DRM) content is never cached: protected memory is scarce, so those blurs use
  * exactly-sized transient surfaces.
@@ -61,6 +61,9 @@ public:
                                           const SkRect& blurRect) const override;
 
 private:
+    sk_sp<SkShader> makeBlurShader(const sk_sp<SkImage>& blurredImage, const SkMatrix& blurMatrix,
+                                   const SkRect& blurRect) const override;
+
     struct SurfaceCache {
         SkiaGpuContext* context = nullptr;
         sk_sp<SkSurface> surfaces[kMaxSurfaces];

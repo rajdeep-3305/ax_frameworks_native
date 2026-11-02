@@ -76,6 +76,14 @@ float BlurFilter::getMaxCrossFadeRadius() const {
     return mMaxCrossFadeRadius;
 }
 
+sk_sp<SkShader> BlurFilter::makeBlurShader(const sk_sp<SkImage>& blurredImage,
+                                           const SkMatrix& blurMatrix,
+                                           const SkRect& /*blurRect*/) const {
+    return blurredImage->makeShader(SkTileMode::kMirror, SkTileMode::kMirror,
+                                    SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNone),
+                                    &blurMatrix);
+}
+
 void BlurFilter::drawBlurRegion(SkCanvas* canvas, const SkRRect& effectRegion,
                                 const uint32_t blurRadius, const float zoomScale,
                                 const float blurAlpha,
@@ -89,8 +97,7 @@ void BlurFilter::drawBlurRegion(SkCanvas* canvas, const SkRRect& effectRegion,
     auto blurMatrix = getShaderTransform(canvas, blurRect, kInverseInputScale, zoomScale);
 
     SkSamplingOptions linearSampling(SkFilterMode::kLinear, SkMipmapMode::kNone);
-    const auto blurShader = blurredImage->makeShader(SkTileMode::kMirror, SkTileMode::kMirror,
-                                                     linearSampling, &blurMatrix);
+    const auto blurShader = makeBlurShader(blurredImage, blurMatrix, blurRect);
 
     if (blurRadius < mMaxCrossFadeRadius) {
         LOG_ALWAYS_FATAL_IF(!input);

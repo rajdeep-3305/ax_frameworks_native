@@ -18,7 +18,9 @@
 
 #include <SkCanvas.h>
 #include <SkImage.h>
+#include <SkMatrix.h>
 #include <SkRuntimeEffect.h>
+#include <SkShader.h>
 #include <SkSurface.h>
 
 #include "../compat/SkiaGpuContext.h"
@@ -62,6 +64,10 @@ public:
 
     float getMaxCrossFadeRadius() const;
 
+protected:
+    virtual sk_sp<SkShader> makeBlurShader(const sk_sp<SkImage>& blurredImage,
+                                           const SkMatrix& blurMatrix,
+                                           const SkRect& blurRect) const;
 private:
     // To avoid downscaling artifacts, we interpolate the blurred fbo with the full composited
     // image, up to this radius.
