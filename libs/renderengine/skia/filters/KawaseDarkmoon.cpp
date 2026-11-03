@@ -36,7 +36,6 @@
 #include <SkString.h>
 #include <SkSurface.h>
 #include <SkTileMode.h>
-#include <common/ThreadStateCrashLogger.h>
 #include <common/trace.h>
 #include <log/log.h>
 
@@ -223,11 +222,9 @@ void KawaseDarkmoon::blurInto(const sk_sp<SkSurface>& drawSurface, SkISize drawC
     canvas->drawPaint(paint);
 }
 
-sk_sp<SkImage> KawaseDarkmoon::generateTemporaryImage(SkiaGpuContext* context,
-                                                      const DisplaySettings& display,
-                                                      const uint32_t blurRadius,
-                                                      const sk_sp<SkImage> input,
-                                                      const SkRect& blurRect) const {
+sk_sp<SkImage> KawaseDarkmoon::generate(SkiaGpuContext* context, const uint32_t blurRadius,
+                                        const sk_sp<SkImage> input,
+                                        const SkRect& blurRect) const {
     SFTRACE_CALL();
     LOG_ALWAYS_FATAL_IF(context == nullptr, "%s: Needs GPU context", __func__);
     LOG_ALWAYS_FATAL_IF(input == nullptr, "%s: Invalid input image", __func__);
@@ -253,27 +250,16 @@ sk_sp<SkImage> KawaseDarkmoon::generateTemporaryImage(SkiaGpuContext* context,
         cache.context = context;
     }
 
-    const SkISize displaySize =
-            SkISize::Make(display.physicalDisplay.width(), display.physicalDisplay.height());
-    const bool hintFromDisplay = !isProtected && !displaySize.isEmpty();
-
     const SkImageInfo baseInfo = input->imageInfo();
 
     SkISize contentSizes[kMaxSurfaces];
     for (int i = 0; i <= filterPasses; i++) {
         contentSizes[i] = levelSize(fullRes, i);
         SkISize preferred = contentSizes[i];
-        if (hintFromDisplay) {
-            const SkISize displayLevel = levelSize(displaySize, i);
-            preferred.fWidth = std::max(preferred.width(), displayLevel.width());
-            preferred.fHeight = std::max(preferred.height(), displayLevel.height());
-        }
         const bool allocated =
                 ensureSurface(cache, i, context, baseInfo, contentSizes[i], preferred);
-        LOG_THREAD_STATE_AND_CRASH_IF(!allocated,
-                                      "%s: Failed to create surface %d (%dx%d) for blurring!",
-                                      __func__, i, contentSizes[i].width(),
-                                      contentSizes[i].height());
+        LOG_ALWAYS_FATAL_IF(!allocated, "%s: Failed to create surface %d (%dx%d) for blurring!",
+                            __func__, i, contentSizes[i].width(), contentSizes[i].height());
     }
     const sk_sp<SkSurface>* surfaces = cache.surfaces;
 

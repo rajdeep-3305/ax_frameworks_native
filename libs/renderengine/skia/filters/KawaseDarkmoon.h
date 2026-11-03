@@ -56,9 +56,9 @@ public:
     explicit KawaseDarkmoon(RuntimeEffectManager& effectManager);
     virtual ~KawaseDarkmoon() {}
 
-    sk_sp<SkImage> generateTemporaryImage(SkiaGpuContext* context, const DisplaySettings& display,
-                                          const uint32_t radius, const sk_sp<SkImage> blurInput,
-                                          const SkRect& blurRect) const override;
+    sk_sp<SkImage> generate(SkiaGpuContext* context, const uint32_t radius,
+                            const sk_sp<SkImage> blurInput,
+                            const SkRect& blurRect) const override;
 
 private:
     sk_sp<SkShader> makeBlurShader(const sk_sp<SkImage>& blurredImage, const SkMatrix& blurMatrix,
